@@ -21,7 +21,9 @@ metrics.set_meter_provider(
 # Criando o meter - Meter
 meter = metrics.get_meter(APP_NAME)
 
-# Métricas Customizadas - Metrica do tipo COUNTER
+# MÉTRICAS CUSTOMIZADAS
+
+# Metrica do tipo COUNTER
 
 requests_counter = meter.create_counter(
     name="app_requests_total",
@@ -40,10 +42,9 @@ random_counter = meter.create_observable_counter(
     description="Contador de valores aleatórios",
     callbacks=[get_random_value],
 )
+# Metrica do tipo GAUGE
 
-# Métricas Customizadas - Metrica do tipo GAUGE
-
-acitive_requests_gauge = meter.create_gauge(
+active_requests_gauge = meter.create_gauge(
     name="app_active_requests",
     description="Número de requisições ativas",
     unit="1",
@@ -62,4 +63,12 @@ memory_gauge = meter.create_observable_gauge(
     name="app_memory_usage",
     description="Uso de memória do processo",
     callbacks=[get_memory_usage],
+)
+# Metrica do tipo HISTOGRAM
+
+response_time_histogram = meter.create_histogram(
+    name="app_response_time_seconds",
+    description="Tempo de resposta das requisições em segundos",
+    unit="s",
+    explicit_bucket_boundaries_advisory=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5] # range de buckets para o histogram
 )

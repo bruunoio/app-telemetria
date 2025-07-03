@@ -5,7 +5,7 @@ import requests
 from fastapi import FastAPI, Response, status, Request
 from typing import List
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from otel.metrics import requests_counter, acitive_requests_gauge
+from otel.metrics import requests_counter, active_requests_gauge, response_time_histogram
 
 # ================================
 #  CONFIGURAÇÃO DA APLICAÇÃO
@@ -22,8 +22,11 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    acitive_requests_gauge.set(1, {"app": APP_NAME, "endpoint": "/"}) # Incrementando valor Gauge com set
-    requests_counter.add(1, {"app": APP_NAME, "endpoint": "/"}) # Incrementando a métrica de requisições - Counter com add
+    active_requests_gauge.set(1, {"app": APP_NAME, "endpoint": "/"}) # Incrementando a métrica de requisições ativas
+    requests_counter.add(1, {"app": APP_NAME, "endpoint": "/"}) # Incrementando a métrica de requisições
+    start_time = time.time() # Marca o tempo atual do processamento
+    elapsed_time = time.time() - start_time
+    response_time_histogram.record(elapsed_time, {"app": APP_NAME, "endpoint": "/"})  # Incrementando o valor do Histogram com record
     return {"message": f"Esse é o serviço {APP_NAME}"}
 # Definindo o exporte de metrics
 @app.get("/metrics")
@@ -36,11 +39,12 @@ def process_request(payload: List[str], response: Response, request: Request):
     Endpoint que processa um payload, simula falhas e latência variável,
     e propaga a requisição para outros serviços.
     """
+    
+    start_time = time.time()  # Marca o tempo atual do processamento
 
-    acitive_requests_gauge.set(10, {"app": APP_NAME, "endpoint": "/process"})
-
-    # Incrementando a métrica de requisições
-    requests_counter.add(1, {"app": APP_NAME, "endpoint": "/process"})
+    active_requests_gauge.set(10, {"app": APP_NAME, "endpoint": "/process"})
+    
+    requests_counter.add(1, {"app": APP_NAME, "endpoint": "/process"}) # Incrementando a métrica de requisições
 
     original_payload = payload.copy()
     original_payload.append(APP_NAME)
@@ -76,5 +80,8 @@ def process_request(payload: List[str], response: Response, request: Request):
             except requests.RequestException as e:
                 response.status_code = status.HTTP_400_BAD_REQUEST
                 return {"error": f"Falha na requisição para {url}: {str(e)}"}
+
+    elapsed_time = time.time() - start_time  # Calcula o tempo total de processamento
+    response_time_histogram.record(elapsed_time, {"app": APP_NAME, "endpoint": "/process"})  # Incrementando valor Histogram com record
 
     return original_payload
