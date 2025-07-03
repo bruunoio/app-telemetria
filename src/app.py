@@ -4,6 +4,8 @@ import random
 import requests
 from fastapi import FastAPI, Response, status, Request
 from typing import List
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from otel.metrics import requests_counter, acitive_requests_gauge
 
 # ================================
 #  CONFIGURAÇÃO DA APLICAÇÃO
@@ -20,7 +22,13 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
+    acitive_requests_gauge.set(1, {"app": APP_NAME, "endpoint": "/"}) # Incrementando valor Gauge com set
+    requests_counter.add(1, {"app": APP_NAME, "endpoint": "/"}) # Incrementando a métrica de requisições - Counter com add
     return {"message": f"Esse é o serviço {APP_NAME}"}
+# Definindo o exporte de metrics
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.post("/process")
 def process_request(payload: List[str], response: Response, request: Request):
@@ -28,6 +36,11 @@ def process_request(payload: List[str], response: Response, request: Request):
     Endpoint que processa um payload, simula falhas e latência variável,
     e propaga a requisição para outros serviços.
     """
+
+    acitive_requests_gauge.set(10, {"app": APP_NAME, "endpoint": "/process"})
+
+    # Incrementando a métrica de requisições
+    requests_counter.add(1, {"app": APP_NAME, "endpoint": "/process"})
 
     original_payload = payload.copy()
     original_payload.append(APP_NAME)
