@@ -40,7 +40,7 @@ def process_request(payload: List[str], response: Response, request: Request):
     e propaga a requisição para outros serviços.
     """
     
-    start_time = time.time()  # Marca o tempo atual do processamento
+    start_time = time.time()  # Marca o tempo atual do processamento - Histogram
 
     active_requests_gauge.set(10, {"app": APP_NAME, "endpoint": "/process"})
     
