@@ -90,4 +90,4 @@ def process_request(payload: List[str], response: Response, request: Request):
             elapsed_time = time.time() - start_time  # Calcula o tempo total de processamento
             response_time_histogram.record(elapsed_time, {"app": APP_NAME, "endpoint": "/process"})  # Incrementando valor Histogram com record
 
-            return original_payload
+        return original_payload

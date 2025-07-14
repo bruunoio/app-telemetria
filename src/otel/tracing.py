@@ -11,6 +11,10 @@ from opentelemetry.sdk.trace.export import ( # trabalhando com exportadores de s
     ConsoleSpanExporter, # Exporta para o console
 )
 
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter # Exportador OTLP para spans
+
+OTLP_ENDPOINT = os.getenv("OTLP_ENDPOINT", "http://localhost:4318/v1/traces") # Endpoint do OTLP
+
 APP_NAME = os.getenv("APP_NAME", "app-a") # Nome da aplicação
 
 resource = Resource.create({"SERVICE_NAME": APP_NAME, "SERVICE_VERSION": "1.0.0"}) # Criando o recurso com o nome e versão do serviço`
@@ -19,7 +23,12 @@ provider = TracerProvider(resource=resource) # Criando o provider de trace com o
 
 processor = BatchSpanProcessor(ConsoleSpanExporter()) # Criando o processador de spans com o exportador de console
 
-provider.add_span_processor(processor) # Adicionando o processador ao provider
+processor_cosole = BatchSpanProcessor(ConsoleSpanExporter()) # Criando o processador de spans com o exportador de console
+
+processor_otlp = BatchSpanProcessor(OTLPSpanExporter(endpoint=OTLP_ENDPOINT)) # Criando o processador de spans com o exportador OTLP
+
+# provider.add_span_processor(processor_cosole) # Adicionando o processador ao provider
+provider.add_span_processor(processor_otlp) # Adicionando o processador OTLP ao provider
 
 trace.set_tracer_provider(provider) # Definindo o provider de trace
 
