@@ -12,12 +12,18 @@ from opentelemetry.sdk.trace.export import ( # trabalhando com exportadores de s
 )
 
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter # Exportador OTLP para spans
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator # Propagador de contexto de trace
 
 OTLP_ENDPOINT = os.getenv("OTLP_ENDPOINT", "http://localhost:4318/v1/traces") # Endpoint do OTLP
 
 APP_NAME = os.getenv("APP_NAME", "app-a") # Nome da aplicação
 
-resource = Resource.create({"SERVICE_NAME": APP_NAME, "SERVICE_VERSION": "1.0.0"}) # Criando o recurso com o nome e versão do serviço`
+resource = Resource.create(
+    {
+        SERVICE_NAME: APP_NAME,  # Nome do serviço
+        SERVICE_VERSION: "1.0.0",  # Versão do serviço
+    }
+)
 
 provider = TracerProvider(resource=resource) # Criando o provider de trace com o recurso
 
@@ -33,3 +39,5 @@ provider.add_span_processor(processor_otlp) # Adicionando o processador OTLP ao 
 trace.set_tracer_provider(provider) # Definindo o provider de trace
 
 tracer = trace.get_tracer(APP_NAME) # Obtendo o tracer para a aplicação
+
+propagator = TraceContextTextMapPropagator()

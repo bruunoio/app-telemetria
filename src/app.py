@@ -6,7 +6,7 @@ from fastapi import FastAPI, Response, status, Request
 from typing import List
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from otel.metrics import requests_counter, active_requests_gauge, response_time_histogram
-from otel.tracing import tracer
+from otel.tracing import tracer, propagator
 
 # ================================
 #  CONFIGURAÇÃO DA APLICAÇÃO
@@ -41,7 +41,9 @@ def process_request(payload: List[str], response: Response, request: Request):
     e propaga a requisição para outros serviços.
     """
 
-    with tracer.start_as_current_span("process-request") as main_span: # span pai - chamada principal para o endpoint /process
+    context = propagator.extract(request.headers)  # Extraindo o contexto do trace da requisição
+
+    with tracer.start_as_current_span("process-request", context=context) as main_span: # span pai - chamada principal para o endpoint /process
     
         start_time = time.time()  # Marca o tempo atual do processamento - Histogram
 
@@ -71,9 +73,14 @@ def process_request(payload: List[str], response: Response, request: Request):
                 with tracer.start_as_current_span("send-request") as child_span:  # span filho - chamada menor para cada serviço de destino
 
                     try:
+
+                        headers = {}
+                        propagator.inject(headers)  # Injeta o contexto do trace nos headers
+
                         resp = requests.post(
                             f"{url}/process",
                             json=original_payload,
+                            headers=headers,
                             timeout=5
                         )
 
